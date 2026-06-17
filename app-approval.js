@@ -362,6 +362,56 @@ function generateToken(apartment) {
   return `SR-${compactApartment}-${Date.now().toString(36).toUpperCase()}`;
 }
 
+function getQrPayload(pass) {
+  return JSON.stringify({
+    app: "SmartResidenceOS",
+    version: 3,
+    token: pass.token,
+    visitorName: pass.visitorName,
+    type: pass.type,
+    phone: pass.phone,
+    apartment: pass.apartment,
+    code: pass.code,
+    note: pass.note,
+    expireAt: pass.expireAt,
+    createdAt: pass.createdAt,
+    createdBy: pass.createdBy
+  });
+}
+
+function parseScannedInput(rawValue) {
+  const value = rawValue.trim();
+  try {
+    const payload = JSON.parse(value);
+    if (payload?.app === "SmartResidenceOS" && payload.token) {
+      return { token: payload.token, payload };
+    }
+  } catch {
+    return { token: value, payload: null };
+  }
+  return { token: value, payload: null };
+}
+
+function importPassFromPayload(payload) {
+  if (!payload?.token || state.passes.some((pass) => pass.token === payload.token)) return null;
+  const pass = {
+    id: Date.now(),
+    token: payload.token,
+    visitorName: payload.visitorName || "Nguoi den",
+    type: payload.type || "Khach tham",
+    phone: payload.phone || "",
+    apartment: payload.apartment || "",
+    code: payload.code || "",
+    note: payload.note || "",
+    status: "active",
+    expireAt: payload.expireAt || new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    createdAt: payload.createdAt || new Date().toISOString(),
+    createdBy: payload.createdBy || "Chu nha"
+  };
+  state.passes.unshift(pass);
+  return pass;
+}
+
 function showSection(sectionId) {
   if (!state.session && sectionId !== "loginPage") {
     sectionId = "loginPage";
@@ -500,7 +550,7 @@ function drawQr(token, canvas) {
 }
 
 function updateOwnerPreview(pass) {
-  drawQr(pass.token, els.ownerQrCanvas);
+  drawQr(getQrPayload(pass), els.ownerQrCanvas);
   const status = currentPassStatus(pass);
   els.ownerQrStatus.textContent = passStatusLabels[status];
   els.ownerShareGuest.textContent = `${pass.visitorName} - ${pass.apartment}`;
@@ -724,8 +774,14 @@ function statusClass(status) {
   return "status-new";
 }
 
-function scanToken(token) {
-  const pass = state.passes.find((item) => item.token === token);
+function scanToken(rawValue) {
+  const scanned = parseScannedInput(rawValue);
+  let pass = state.passes.find((item) => item.token === scanned.token);
+  if (!pass && scanned.payload) {
+    pass = importPassFromPayload(scanned.payload);
+    if (pass) saveState();
+  }
+
   if (!pass) {
     scannedPassId = null;
     els.scanResult.className = "result-box error";
