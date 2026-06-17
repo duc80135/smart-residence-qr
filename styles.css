@@ -388,6 +388,21 @@ button {
   margin-bottom: 16px;
 }
 
+.priority-panel {
+  border-color: rgba(217, 161, 47, 0.55);
+  background: #fffdf7;
+}
+
+.sync-note {
+  margin: -6px 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff3d8;
+  color: var(--warning);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .panel-heading {
   margin-bottom: 14px;
 }
