@@ -36,6 +36,8 @@ const defaultSectionByRole = {
 
 const passStatusLabels = {
   active: "Dang hieu luc",
+  waitingOwner: "Cho chu nha xac nhan",
+  ownerApproved: "Chu nha da dong y",
   checkedIn: "Da xac nhan vao",
   rejected: "Bi tu choi",
   expired: "Het han"
@@ -77,6 +79,8 @@ const els = {
   copyTokenButton: document.getElementById("copyTokenButton"),
   createdPassList: document.getElementById("createdPassList"),
   createdPassCount: document.getElementById("createdPassCount"),
+  ownerConfirmList: document.getElementById("ownerConfirmList"),
+  ownerConfirmCount: document.getElementById("ownerConfirmCount"),
   scanSelect: document.getElementById("scanSelect"),
   manualToken: document.getElementById("manualToken"),
   scanButton: document.getElementById("scanButton"),
@@ -459,6 +463,30 @@ function renderPasses() {
   }).join("");
 }
 
+function renderOwnerConfirmations() {
+  const waiting = state.passes.filter((pass) => currentPassStatus(pass) === "waitingOwner");
+  els.ownerConfirmCount.textContent = `${waiting.length} yeu cau`;
+  els.ownerConfirmList.innerHTML = waiting.length ? waiting.map((pass) => `
+    <article class="item-card">
+      <div>
+        <h3>${pass.visitorName}</h3>
+        <p>Bao ve da quet QR va can chu nha xac nhan truoc khi cho vao.</p>
+        <div class="item-meta">
+          <span>${pass.type}</span>
+          <span>${pass.apartment}</span>
+          <span>${pass.phone || "Khong co SDT"}</span>
+          <span>${pass.code || "Khong co ma phu"}</span>
+          <span>Quet luc: ${pass.guardScannedAt ? formatDateTime(pass.guardScannedAt) : "Vua quet"}</span>
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="mini-button" type="button" data-owner-approve="${pass.id}">Dong y cho vao</button>
+        <button class="mini-button" type="button" data-owner-reject="${pass.id}">Tu choi</button>
+      </div>
+    </article>
+  `).join("") : `<div class="item-card"><p>Chua co yeu cau nao tu bao ve.</p></div>`;
+}
+
 function renderScanDetail(pass, mode = "neutral") {
   if (!pass) {
     scannedPassId = null;
@@ -488,9 +516,9 @@ function renderScanDetail(pass, mode = "neutral") {
     </dl>
   `;
 
-  const canConfirm = status === "active";
+  const canConfirm = status === "ownerApproved";
   els.confirmEntryButton.disabled = !canConfirm;
-  els.rejectEntryButton.disabled = status === "expired";
+  els.rejectEntryButton.disabled = status === "expired" || status === "checkedIn";
 }
 
 function renderAccessLogs() {
@@ -573,8 +601,8 @@ function renderReports() {
 }
 
 function statusClass(status) {
-  if (status === "active" || status === "checkedIn" || status === "done") return "status-approved";
-  if (status === "processing") return "status-pending";
+  if (status === "active" || status === "ownerApproved" || status === "checkedIn" || status === "done") return "status-approved";
+  if (status === "waitingOwner" || status === "processing") return "status-pending";
   if (status === "expired" || status === "rejected") return "status-rejected";
   return "status-new";
 }
@@ -590,14 +618,26 @@ function scanToken(token) {
   }
 
   const status = currentPassStatus(pass);
-  renderScanDetail(pass, status === "active" ? "success" : "error");
+  const scanMode = ["active", "waitingOwner", "ownerApproved"].includes(status) ? "success" : "error";
+  renderScanDetail(pass, scanMode);
 
   if (status === "active") {
+    pass.status = "waitingOwner";
+    pass.guardScannedAt = new Date().toISOString();
+    saveState();
+    renderAll();
+    renderScanDetail(pass, "success");
     els.scanResult.className = "result-box success";
-    els.scanResult.textContent = "QR hop le. Hay doi chieu nguoi that voi thong tin tren man hinh, sau do bam xac nhan.";
+    els.scanResult.textContent = "QR dung. He thong da gui yeu cau xac nhan den chu nha. Chi cho vao sau khi chu nha dong y.";
   } else if (status === "expired") {
     els.scanResult.className = "result-box error";
     els.scanResult.textContent = "QR da het han. Bao ve khong nen cho vao.";
+  } else if (status === "waitingOwner") {
+    els.scanResult.className = "result-box neutral";
+    els.scanResult.textContent = "Dang cho chu nha xac nhan. Chua duoc cho vao.";
+  } else if (status === "ownerApproved") {
+    els.scanResult.className = "result-box success";
+    els.scanResult.textContent = "Chu nha da dong y. Bao ve co the ghi nhan cho vao.";
   } else if (status === "checkedIn") {
     els.scanResult.className = "result-box error";
     els.scanResult.textContent = "QR nay da duoc xac nhan vao truoc do.";
@@ -624,6 +664,16 @@ function logGateDecision(result, note, nextStatus) {
   els.scanResult.textContent = note;
   renderAll();
   renderScanDetail(pass, result === "Hop le" ? "success" : "error");
+}
+
+function ownerDecide(passId, approved) {
+  const pass = state.passes.find((item) => item.id === passId);
+  if (!pass) return;
+  pass.ownerDecisionAt = new Date().toISOString();
+  pass.status = approved ? "ownerApproved" : "rejected";
+  pass.ownerDecision = approved ? "approved" : "rejected";
+  saveState();
+  renderAll();
 }
 
 function stopCameraScanner() {
@@ -765,6 +815,14 @@ function bindEvents() {
     if (pass) updateOwnerPreview(pass);
   });
 
+  els.ownerConfirmList.addEventListener("click", (event) => {
+    const approveButton = event.target.closest("[data-owner-approve]");
+    const rejectButton = event.target.closest("[data-owner-reject]");
+    const id = approveButton?.dataset.ownerApprove || rejectButton?.dataset.ownerReject;
+    if (!id) return;
+    ownerDecide(Number(id), Boolean(approveButton));
+  });
+
   els.copyTokenButton.addEventListener("click", async () => {
     const token = els.ownerShareToken.textContent.trim();
     try {
@@ -788,7 +846,7 @@ function bindEvents() {
   els.cameraCheckButton.addEventListener("click", checkCameraAccess);
 
   els.confirmEntryButton.addEventListener("click", () => {
-    logGateDecision("Hop le", "Bao ve da doi chieu dung doi tuong voi QR do chu nha tao.", "checkedIn");
+    logGateDecision("Hop le", "Chu nha da dong y. Bao ve ghi nhan cho vao.", "checkedIn");
   });
 
   els.rejectEntryButton.addEventListener("click", () => {
@@ -841,6 +899,7 @@ function renderAll() {
   renderDashboard();
   renderApartmentOptions();
   renderPasses();
+  renderOwnerConfirmations();
   renderAccessLogs();
   renderResidents();
   renderTickets();
