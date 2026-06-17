@@ -247,6 +247,17 @@ button {
   border-color: var(--line);
 }
 
+.mini-button.approve-action {
+  background: #e4f4e9;
+  color: var(--success);
+  border-color: #bfe2ca;
+}
+
+.mini-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .page-section {
   display: none;
 }

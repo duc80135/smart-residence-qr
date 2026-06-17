@@ -647,11 +647,22 @@ function renderOwnerConfirmations() {
         </div>
       </div>
       <div class="item-actions">
-        <button class="mini-button" type="button" data-owner-approve="${pass.id}">Dong y cho vao</button>
+        <button class="mini-button approve-action" type="button" data-owner-approve="${pass.id}">Dung doi tuong</button>
         <button class="mini-button" type="button" data-owner-reject="${pass.id}">Tu choi</button>
       </div>
     </article>
-  `).join("") : `<div class="item-card"><p>Chua co yeu cau nao tu bao ve.</p></div>`;
+  `).join("") : `
+    <div class="item-card empty-confirm-card">
+      <div>
+        <h3>Chua co yeu cau tu bao ve</h3>
+        <p>Khi bao ve quet QR hop le, thong tin nguoi den se hien o day de chu nha chon dung doi tuong hoac tu choi.</p>
+      </div>
+      <div class="item-actions">
+        <button class="mini-button approve-action" type="button" disabled>Dung doi tuong</button>
+        <button class="mini-button" type="button" disabled>Tu choi</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderScanDetail(pass, mode = "neutral") {
