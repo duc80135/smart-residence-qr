@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Smart Residence OS - QR Chung Cu</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">SR</div>
+          <div>
+            <strong>Smart Residence OS</strong>
+            <span>Kiem soat ra vao bang QR</span>
+          </div>
+        </div>
+
+        <div class="role-panel">
+          <label>Tai khoan dang nhap</label>
+          <strong id="sessionName">Chua dang nhap</strong>
+          <p id="roleDescription">Dang nhap bang tai khoan chu nha hoac bao ve de su dung dung giao dien.</p>
+          <button id="logoutButton" class="ghost-button hidden" type="button">Dang xuat</button>
+        </div>
+
+        <nav class="nav" aria-label="Dieu huong chinh">
+          <button class="nav-button" data-section="dashboard" data-roles="resident security manager">Tong quan</button>
+          <button class="nav-button" data-section="residentPortal" data-roles="resident manager">Chu nha tao QR</button>
+          <button class="nav-button" data-section="securityGate" data-roles="security manager">Bao ve quet QR</button>
+          <button class="nav-button" data-section="management" data-roles="manager">Quan ly</button>
+          <button class="nav-button" data-section="roadmap" data-roles="resident security manager">Roadmap</button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Demo mobile first</p>
+            <h1>He thong quan ly va kiem soat ra vao bang ma QR Code cho chung cu</h1>
+          </div>
+          <div class="topbar-actions">
+            <button id="seedButton" class="ghost-button" type="button">Nap du lieu mau</button>
+            <button id="clearButton" class="danger-button" type="button">Lam moi demo</button>
+          </div>
+        </header>
+
+        <section id="loginPage" class="page-section active">
+          <div class="login-layout">
+            <article class="login-card">
+              <p class="eyebrow">Dang nhap he thong</p>
+              <h2>Tai khoan rieng cho tung nguoi dung</h2>
+              <p class="helper-text">Chu nha va bao ve khong chon vai tro bang dropdown nua. Moi nguoi dang nhap bang tai khoan va mat khau rieng.</p>
+              <form id="loginForm" class="login-form">
+                <label>
+                  Ten dang nhap
+                  <input id="usernameInput" type="text" autocomplete="username" placeholder="chu_nha_a1205" required />
+                </label>
+                <label>
+                  Mat khau
+                  <input id="passwordInput" type="password" autocomplete="current-password" placeholder="Nhap mat khau" required />
+                </label>
+                <button class="primary-button" type="submit">Dang nhap</button>
+                <div id="loginMessage" class="login-message"></div>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>Tai khoan demo</h3>
+              </div>
+              <div class="credential-list">
+                <button class="credential-card" type="button" data-demo-login="owner">
+                  <b>Chu nha A-1205</b>
+                  <span>user: chu_nha_a1205</span>
+                  <span>pass: 123456</span>
+                </button>
+                <button class="credential-card" type="button" data-demo-login="guard">
+                  <b>Bao ve ca sang</b>
+                  <span>user: bao_ve_01</span>
+                  <span>pass: 123456</span>
+                </button>
+                <button class="credential-card" type="button" data-demo-login="manager">
+                  <b>Ban quan ly</b>
+                  <span>user: quan_ly</span>
+                  <span>pass: 123456</span>
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="dashboard" class="page-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Dashboard van hanh</p>
+              <h2>Quy trinh dung thuc te</h2>
+            </div>
+            <span id="currentTime" class="soft-badge"></span>
+          </div>
+
+          <div class="metrics-grid">
+            <article class="metric-card">
+              <span>QR dang hieu luc</span>
+              <strong id="activePasses">0</strong>
+              <small>Do chu nha tao</small>
+            </article>
+            <article class="metric-card">
+              <span>Luot vao hop le</span>
+              <strong id="todayVisits">0</strong>
+              <small>Bao ve da xac nhan</small>
+            </article>
+            <article class="metric-card alert">
+              <span>QR het han</span>
+              <strong id="expiredPasses">0</strong>
+              <small>Can tao ma moi</small>
+            </article>
+            <article class="metric-card">
+              <span>Ticket dang xu ly</span>
+              <strong id="processingTickets">0</strong>
+              <small>Phan anh chua hoan tat</small>
+            </article>
+          </div>
+
+          <div class="split-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>Luot xac nhan theo gio</h3>
+                <span class="soft-badge">Hom nay</span>
+              </div>
+              <div id="hourlyChart" class="bar-chart"></div>
+            </article>
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>Luong nghiep vu</h3>
+              </div>
+              <div class="process-list">
+                <div><b>1</b><span>Chu nha nhap thong tin shipper, doi ky thuat hoac khach.</span></div>
+                <div><b>2</b><span>He thong tao QR da duoc chu nha cho phep va hien tren dien thoai.</span></div>
+                <div><b>3</b><span>Chu nha gui anh QR hoac token cho nguoi den.</span></div>
+                <div><b>4</b><span>Bao ve quet QR, doi chieu thong tin, roi bam xac nhan dung doi tuong.</span></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="residentPortal" class="page-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Dien thoai chu nha</p>
+              <h2>Chu nha tao QR cho shipper, doi ky thuat hoac khach</h2>
+            </div>
+          </div>
+
+          <div class="split-grid">
+            <article class="panel role-content" data-roles="resident manager">
+              <div class="panel-heading">
+                <h3>Nhap thong tin nguoi den</h3>
+                <span class="soft-badge">Chu nha</span>
+              </div>
+              <p class="helper-text">Sau khi nhan "Tao ma QR", ma QR hien ngay tren man hinh. Chu nha gui ma nay cho shipper/khach/doi ky thuat de bao ve quet tai cong.</p>
+              <form id="residentPassForm" class="form-grid">
+                <label>
+                  Ten nguoi den
+                  <input id="visitorName" type="text" placeholder="Vi du: Shipper ShopeeFood" required />
+                </label>
+                <label>
+                  Loai doi tuong
+                  <select id="visitorType">
+                    <option>Shipper</option>
+                    <option>Doi ky thuat</option>
+                    <option>Khach tham</option>
+                  </select>
+                </label>
+                <label>
+                  Can ho
+                  <select id="apartmentSelect"></select>
+                </label>
+                <label>
+                  So dien thoai
+                  <input id="visitorPhone" type="tel" placeholder="09xx xxx xxx" />
+                </label>
+                <label>
+                  Het han
+                  <input id="expireAt" type="datetime-local" required />
+                </label>
+                <label>
+                  Bien so / ma don
+                  <input id="visitCode" type="text" placeholder="SPX-123, 59A-12345..." />
+                </label>
+                <label class="full-span">
+                  Ghi chu cho bao ve
+                  <input id="visitNote" type="text" placeholder="Giao tai sanh, sua may lanh, gap chu nha..." />
+                </label>
+                <button class="primary-button" type="submit">Tao ma QR</button>
+              </form>
+            </article>
+
+            <article class="panel role-content" data-roles="resident manager">
+              <div class="panel-heading">
+                <h3>QR de gui cho nguoi den</h3>
+                <span id="ownerQrStatus" class="soft-badge">San sang</span>
+              </div>
+              <div class="phone-mock owner-phone">
+                <div class="phone-speaker"></div>
+                <div class="phone-screen">
+                  <div class="phone-appbar">
+                    <span>Ma vao cong</span>
+                    <b>Chu nha</b>
+                  </div>
+                  <div class="share-card">
+                    <canvas id="ownerQrCanvas" width="220" height="220" aria-label="QR chu nha tao"></canvas>
+                    <strong id="ownerShareGuest">Chua co QR moi</strong>
+                    <p id="ownerShareMeta">Nhap thong tin ben trai de tao QR.</p>
+                    <code id="ownerShareToken">TOKEN-DEMO</code>
+                    <button id="copyTokenButton" class="primary-button" type="button">Sao chep token de gui</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div class="split-grid">
+            <article class="panel role-content" data-roles="resident manager">
+              <div class="panel-heading">
+                <h3>Gui phan anh su co</h3>
+                <span class="soft-badge">Cu dan</span>
+              </div>
+              <form id="ticketForm" class="form-grid">
+                <label>
+                  Tieu de
+                  <input id="ticketTitle" type="text" placeholder="Vi du: Den hanh lang bi hong" required />
+                </label>
+                <label>
+                  Danh muc
+                  <select id="ticketCategory">
+                    <option>An ninh</option>
+                    <option>Ve sinh</option>
+                    <option>Dien nuoc</option>
+                    <option>Thang may</option>
+                    <option>Khac</option>
+                  </select>
+                </label>
+                <label class="full-span">
+                  Noi dung
+                  <textarea id="ticketContent" rows="4" placeholder="Mo ta chi tiet su co..." required></textarea>
+                </label>
+                <button class="primary-button" type="submit">Tao ticket</button>
+              </form>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>QR chu nha da tao</h3>
+                <span id="createdPassCount" class="soft-badge">0 QR</span>
+              </div>
+              <div id="createdPassList" class="card-list compact"></div>
+            </article>
+          </div>
+        </section>
+
+        <section id="securityGate" class="page-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Dien thoai bao ve</p>
+              <h2>Quet QR de doi chieu va xac nhan dung doi tuong</h2>
+            </div>
+          </div>
+
+          <div class="split-grid security-grid">
+            <article class="panel role-content" data-roles="security manager">
+              <div class="panel-heading">
+                <h3>Quet ma tai cong</h3>
+                <span class="soft-badge">Bao ve</span>
+              </div>
+              <p class="helper-text">Bao ve khong tao QR. Bao ve chi quet ma do nguoi den dua ra, xem thong tin co dung voi ma chu nha tao hay khong, roi moi bam xac nhan.</p>
+              <div class="phone-mock guard-phone">
+                <div class="phone-speaker"></div>
+                <div class="phone-screen">
+                  <div class="phone-appbar">
+                    <span>Quet QR</span>
+                    <b>Bao ve</b>
+                  </div>
+                  <div class="scanner-frame">
+                    <div class="scan-line"></div>
+                    <span>Camera quet QR</span>
+                  </div>
+                  <div class="camera-check">
+                    <button id="cameraCheckButton" class="ghost-button" type="button">Kiem tra camera that</button>
+                    <p id="cameraStatus">Ban demo hien dang quet mo phong bang token/danh sach QR.</p>
+                    <video id="cameraPreview" class="camera-preview hidden" autoplay playsinline muted></video>
+                  </div>
+                  <div class="scanner-controls phone-controls">
+                    <label>
+                      Mo phong quet QR
+                      <select id="scanSelect"></select>
+                    </label>
+                    <label>
+                      Hoac nhap token
+                      <input id="manualToken" type="text" placeholder="SR-..." />
+                    </label>
+                    <button id="scanButton" class="primary-button" type="button">Quet ma</button>
+                    <button id="invalidScanButton" class="ghost-button" type="button">Test ma sai</button>
+                  </div>
+                  <div id="scanResult" class="result-box neutral">Chua co ma duoc quet.</div>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>Thong tin doi chieu</h3>
+                <span id="scanStatusBadge" class="soft-badge">Chua quet</span>
+              </div>
+              <div id="scanDetail" class="scan-detail empty">
+                Quet QR de hien thong tin nguoi den, can ho, loai doi tuong, han su dung va ghi chu cua chu nha.
+              </div>
+              <div class="confirm-actions">
+                <button id="confirmEntryButton" class="primary-button" type="button" disabled>Xac nhan dung doi tuong - cho vao</button>
+                <button id="rejectEntryButton" class="danger-button" type="button" disabled>Tu choi / khong khop thong tin</button>
+              </div>
+            </article>
+          </div>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Nhat ky ra vao</h3>
+              <span id="logCount" class="soft-badge">0 luot</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Thoi gian</th>
+                    <th>Nguoi den</th>
+                    <th>Can ho</th>
+                    <th>Loai</th>
+                    <th>Ket qua</th>
+                    <th>Ghi chu</th>
+                  </tr>
+                </thead>
+                <tbody id="accessLogBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section id="management" class="page-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Ban quan ly</p>
+              <h2>Giam sat QR, cu dan, phan anh va bao cao</h2>
+            </div>
+          </div>
+
+          <div class="split-grid">
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>Danh sach cu dan</h3>
+                <span id="residentCount" class="soft-badge">0 cu dan</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cu dan</th>
+                      <th>Can ho</th>
+                      <th>Dien thoai</th>
+                      <th>Trang thai</th>
+                    </tr>
+                  </thead>
+                  <tbody id="residentBody"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading">
+                <h3>Thong ke phan anh</h3>
+              </div>
+              <div id="ticketCategoryChart" class="category-chart"></div>
+              <div id="statusChart" class="status-grid with-gap"></div>
+            </article>
+          </div>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Danh sach phan anh</h3>
+              <span id="ticketCount" class="soft-badge">0 ticket</span>
+            </div>
+            <div id="ticketList" class="card-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Luot xac nhan QR trong 7 ngay</h3>
+            </div>
+            <div id="weeklyChart" class="bar-chart weekly"></div>
+          </article>
+        </section>
+
+        <section id="roadmap" class="page-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Dinh huong phat trien</p>
+              <h2>Mo rong sau MVP</h2>
+            </div>
+          </div>
+          <div class="roadmap-grid">
+            <article class="roadmap-item done">
+              <b>MVP</b>
+              <h3>Chu nha tao QR</h3>
+              <p>Nhap thong tin nguoi den, tao QR va gui cho shipper/khach/doi ky thuat.</p>
+            </article>
+            <article class="roadmap-item done">
+              <b>MVP</b>
+              <h3>Bao ve quet va doi chieu</h3>
+              <p>Quet QR, xem thong tin, xac nhan dung doi tuong hoac tu choi.</p>
+            </article>
+            <article class="roadmap-item">
+              <b>Giai doan 2</b>
+              <h3>Quet camera that</h3>
+              <p>Tich hop camera dien thoai bang thu vien QR scanner hoac BarcodeDetector.</p>
+            </article>
+            <article class="roadmap-item">
+              <b>Giai doan 3</b>
+              <h3>Tich hop thiet bi</h3>
+              <p>Ket noi barrier, camera, backend, thong bao va app mobile.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
