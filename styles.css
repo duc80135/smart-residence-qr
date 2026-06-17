@@ -88,6 +88,19 @@ button {
   font-size: 16px;
 }
 
+.sidebar-status {
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-status.online {
+  color: #9de2c4;
+}
+
+.sidebar-status.offline {
+  color: #f0c879;
+}
+
 .role-panel {
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.12);

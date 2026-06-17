@@ -21,6 +21,7 @@
           <label>Tai khoan dang nhap</label>
           <strong id="sessionName">Chua dang nhap</strong>
           <p id="roleDescription">Dang nhap bang tai khoan chu nha hoac bao ve de su dung dung giao dien.</p>
+          <p id="syncStatus" class="sidebar-status">Dong bo: dang dung du lieu cuc bo.</p>
           <button id="logoutButton" class="ghost-button hidden" type="button">Dang xuat</button>
         </div>
 
@@ -158,7 +159,7 @@
               <span id="ownerConfirmCount" class="soft-badge">0 yeu cau</span>
             </div>
             <p class="helper-text">Khi bao ve quet QR hop le, yeu cau se hien ngay tai day. Chu nha bam dong y thi bao ve moi duoc cho vao.</p>
-            <p class="sync-note">Luu y demo GitHub Pages luu du lieu tren tung trinh duyet. Neu chu nha va bao ve dung 2 dien thoai khac nhau, can them Firebase/Supabase de dong bo thoi gian thuc.</p>
+            <p class="sync-note" id="ownerSyncNote">Neu da bat dong bo online, yeu cau tu dien thoai bao ve se hien tai day tren dien thoai chu nha.</p>
             <div id="ownerConfirmList" class="card-list"></div>
           </article>
 
@@ -445,6 +446,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

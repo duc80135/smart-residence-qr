@@ -1,4 +1,5 @@
 const STORAGE_KEY = "smartResidenceOwnerGuardDemoV3";
+const SHARED_STATE_KEY = "smartResidenceQrSharedStateV3";
 
 const roleDescriptions = {
   resident: "Chu nha tao ma QR cho shipper, doi ky thuat hoac khach.",
@@ -57,6 +58,8 @@ const els = {
   logoutButton: document.getElementById("logoutButton"),
   sessionName: document.getElementById("sessionName"),
   roleDescription: document.getElementById("roleDescription"),
+  syncStatus: document.getElementById("syncStatus"),
+  ownerSyncNote: document.getElementById("ownerSyncNote"),
   currentTime: document.getElementById("currentTime"),
   activePasses: document.getElementById("activePasses"),
   todayVisits: document.getElementById("todayVisits"),
@@ -114,6 +117,8 @@ let state = loadState();
 let scannedPassId = null;
 let cameraStream = null;
 let scannerFrameId = null;
+let realtimeRef = null;
+let applyingRemoteState = false;
 
 function createSeedState() {
   const now = new Date();
@@ -211,14 +216,110 @@ function loadState() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return createSeedState();
     const parsed = JSON.parse(saved);
-    return parsed.version === 3 ? parsed : createSeedState();
+    return parsed.version === 3 ? normalizeState(parsed) : createSeedState();
   } catch {
     return createSeedState();
   }
 }
 
-function saveState() {
+function normalizeState(nextState) {
+  return {
+    ...createSeedState(),
+    ...nextState,
+    session: nextState.session || null,
+    residents: Array.isArray(nextState.residents) ? nextState.residents : [],
+    passes: Array.isArray(nextState.passes) ? nextState.passes : [],
+    accessLogs: Array.isArray(nextState.accessLogs) ? nextState.accessLogs : [],
+    tickets: Array.isArray(nextState.tickets) ? nextState.tickets : []
+  };
+}
+
+function getSharedStateSnapshot() {
+  const { session, ...sharedState } = state;
+  return sharedState;
+}
+
+function setSyncStatus(message, mode = "offline") {
+  if (els.syncStatus) {
+    els.syncStatus.textContent = message;
+    els.syncStatus.className = `sidebar-status ${mode}`;
+  }
+  if (els.ownerSyncNote) {
+    els.ownerSyncNote.textContent = mode === "online"
+      ? "Dong bo online dang bat: yeu cau tu dien thoai bao ve se hien tren dien thoai chu nha."
+      : "Demo dang dung du lieu cuc bo. Hai dien thoai khac nhau can dien cau hinh Firebase trong firebase-config.js de dong bo.";
+  }
+}
+
+function saveState(options = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  const shouldSyncRemote = options.remote !== false;
+  if (shouldSyncRemote && realtimeRef && !applyingRemoteState) {
+    realtimeRef.set(getSharedStateSnapshot()).catch(() => {
+      setSyncStatus("Dong bo: loi ghi Firebase, dang giu du lieu cuc bo.", "offline");
+    });
+  }
+}
+
+function applyRemoteSharedState(remoteState) {
+  if (!remoteState || remoteState.version !== 3) return;
+  const session = state.session || null;
+  const selectedPassId = scannedPassId;
+  applyingRemoteState = true;
+  state = normalizeState({ ...remoteState, session });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderAll();
+
+  const selectedPass = state.passes.find((pass) => pass.id === selectedPassId);
+  if (selectedPass) {
+    const status = currentPassStatus(selectedPass);
+    renderScanDetail(selectedPass, ["active", "waitingOwner", "ownerApproved"].includes(status) ? "success" : "error");
+    if (getCurrentRole() === "security" && status === "ownerApproved") {
+      els.scanResult.className = "result-box success";
+      els.scanResult.textContent = "Chu nha da dong y. Bao ve co the ghi nhan cho vao.";
+    }
+    if (getCurrentRole() === "security" && status === "rejected") {
+      els.scanResult.className = "result-box error";
+      els.scanResult.textContent = "Chu nha da tu choi. Bao ve khong cho vao.";
+    }
+  }
+  applyingRemoteState = false;
+}
+
+function initRealtimeSync() {
+  const config = window.FIREBASE_CONFIG;
+  if (!config || !config.databaseURL || !window.firebase) {
+    setSyncStatus("Dong bo: dang dung du lieu cuc bo.", "offline");
+    return;
+  }
+
+  try {
+    if (!window.firebase.apps.length) {
+      window.firebase.initializeApp(config);
+    }
+    realtimeRef = window.firebase.database().ref(SHARED_STATE_KEY);
+    setSyncStatus("Dong bo: dang ket noi Firebase...", "offline");
+
+    realtimeRef.once("value").then((snapshot) => {
+      if (!snapshot.exists()) {
+        return realtimeRef.set(getSharedStateSnapshot());
+      }
+      applyRemoteSharedState(snapshot.val());
+      return null;
+    }).then(() => {
+      setSyncStatus("Dong bo: online voi Firebase.", "online");
+    }).catch(() => {
+      setSyncStatus("Dong bo: khong ket noi duoc Firebase.", "offline");
+    });
+
+    realtimeRef.on("value", (snapshot) => {
+      if (!snapshot.exists()) return;
+      applyRemoteSharedState(snapshot.val());
+      setSyncStatus("Dong bo: online voi Firebase.", "online");
+    });
+  } catch {
+    setSyncStatus("Dong bo: cau hinh Firebase chua dung.", "offline");
+  }
 }
 
 function formatDateTime(value) {
@@ -273,6 +374,14 @@ function getCurrentRole() {
   return state.session?.role || null;
 }
 
+function isResidentOwner() {
+  return getCurrentRole() === "resident" && Boolean(state.session?.apartment);
+}
+
+function canCurrentUserSeePass(pass) {
+  return !isResidentOwner() || pass.apartment === state.session.apartment;
+}
+
 function applySession() {
   const role = getCurrentRole();
   document.body.classList.toggle("logged-out", !role);
@@ -287,7 +396,7 @@ function applySession() {
     });
     document.querySelectorAll(".role-content").forEach((node) => node.classList.add("hidden"));
     showSection("loginPage");
-    saveState();
+    saveState({ remote: false });
     return;
   }
 
@@ -304,7 +413,7 @@ function applySession() {
     const roles = node.dataset.roles.split(" ");
     node.classList.toggle("hidden", !roles.includes(role));
   });
-  saveState();
+  saveState({ remote: false });
 }
 
 function login(username, password) {
@@ -325,7 +434,7 @@ function login(username, password) {
   };
   els.loginForm.reset();
   els.loginMessage.textContent = "";
-  applySession();
+  renderAll();
   showSection(defaultSectionByRole[account.role]);
 }
 
@@ -429,14 +538,18 @@ function renderBars(container, labels, values) {
 }
 
 function renderApartmentOptions() {
-  els.apartmentSelect.innerHTML = state.residents.map((resident) => {
+  const residents = isResidentOwner()
+    ? state.residents.filter((resident) => resident.apartment === state.session.apartment)
+    : state.residents;
+  els.apartmentSelect.innerHTML = residents.map((resident) => {
     return `<option value="${resident.apartment}">${resident.apartment} - ${resident.name}</option>`;
   }).join("");
 }
 
 function renderPasses() {
-  els.createdPassCount.textContent = `${state.passes.length} QR`;
-  els.createdPassList.innerHTML = state.passes.map((pass) => {
+  const visiblePasses = state.passes.filter(canCurrentUserSeePass);
+  els.createdPassCount.textContent = `${visiblePasses.length} QR`;
+  els.createdPassList.innerHTML = visiblePasses.map((pass) => {
     const status = currentPassStatus(pass);
     return `
       <article class="item-card">
@@ -464,7 +577,7 @@ function renderPasses() {
 }
 
 function renderOwnerConfirmations() {
-  const waiting = state.passes.filter((pass) => currentPassStatus(pass) === "waitingOwner");
+  const waiting = state.passes.filter((pass) => currentPassStatus(pass) === "waitingOwner" && canCurrentUserSeePass(pass));
   els.ownerConfirmCount.textContent = `${waiting.length} yeu cau`;
   els.ownerConfirmList.innerHTML = waiting.length ? waiting.map((pass) => `
     <article class="item-card">
@@ -794,7 +907,7 @@ function bindEvents() {
   els.logoutButton.addEventListener("click", () => {
     state.session = null;
     scannedPassId = null;
-    saveState();
+    saveState({ remote: false });
     renderScanDetail(null);
     applySession();
   });
@@ -920,3 +1033,4 @@ function init() {
 
 bindEvents();
 init();
+initRealtimeSync();
