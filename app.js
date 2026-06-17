@@ -108,6 +108,8 @@ const els = {
 
 let state = loadState();
 let scannedPassId = null;
+let cameraStream = null;
+let scannerFrameId = null;
 
 function createSeedState() {
   const now = new Date();
@@ -323,7 +325,7 @@ function login(username, password) {
   showSection(defaultSectionByRole[account.role]);
 }
 
-function drawDemoQr(token, canvas) {
+function drawFallbackQr(token, canvas) {
   const ctx = canvas.getContext("2d");
   const size = canvas.width;
   const cells = 25;
@@ -363,8 +365,25 @@ function drawDemoQr(token, canvas) {
   }
 }
 
+function drawQr(token, canvas) {
+  if (window.QRCode && typeof window.QRCode.toCanvas === "function") {
+    window.QRCode.toCanvas(canvas, token, {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      width: canvas.width,
+      color: {
+        dark: "#1d2928",
+        light: "#ffffff"
+      }
+    }, () => {});
+    return;
+  }
+
+  drawFallbackQr(token, canvas);
+}
+
 function updateOwnerPreview(pass) {
-  drawDemoQr(pass.token, els.ownerQrCanvas);
+  drawQr(pass.token, els.ownerQrCanvas);
   const status = currentPassStatus(pass);
   els.ownerQrStatus.textContent = passStatusLabels[status];
   els.ownerShareGuest.textContent = `${pass.visitorName} - ${pass.apartment}`;
@@ -607,6 +626,40 @@ function logGateDecision(result, note, nextStatus) {
   renderScanDetail(pass, result === "Hop le" ? "success" : "error");
 }
 
+function stopCameraScanner() {
+  if (scannerFrameId) {
+    cancelAnimationFrame(scannerFrameId);
+    scannerFrameId = null;
+  }
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
+  }
+}
+
+function decodeCameraFrame(video, canvas) {
+  if (!cameraStream) return;
+
+  if (video.readyState === video.HAVE_ENOUGH_DATA && window.jsQR) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const qr = window.jsQR(imageData.data, imageData.width, imageData.height);
+    if (qr && qr.data) {
+      els.cameraStatus.textContent = `Da doc QR: ${qr.data}`;
+      els.cameraStatus.className = "camera-status success";
+      els.manualToken.value = qr.data;
+      scanToken(qr.data);
+      stopCameraScanner();
+      return;
+    }
+  }
+
+  scannerFrameId = requestAnimationFrame(() => decodeCameraFrame(video, canvas));
+}
+
 async function checkCameraAccess() {
   if (!window.isSecureContext) {
     els.cameraStatus.textContent = "Trinh duyet dang chan camera vi trang nay mo bang HTTP. Hay chay bang HTTPS hoac mo tren localhost cua chinh thiet bi.";
@@ -620,15 +673,25 @@ async function checkCameraAccess() {
     return;
   }
 
+  if (!window.jsQR) {
+    els.cameraStatus.textContent = "Chua tai duoc thu vien doc QR. Hay kiem tra ket noi mang roi tai lai trang.";
+    els.cameraStatus.className = "camera-status error";
+    return;
+  }
+
   try {
+    stopCameraScanner();
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" },
       audio: false
     });
+    cameraStream = stream;
     els.cameraPreview.srcObject = stream;
     els.cameraPreview.classList.remove("hidden");
-    els.cameraStatus.textContent = "Camera da mo duoc. Buoc tiep theo can tich hop thu vien doc QR that.";
+    els.cameraStatus.textContent = "Camera da mo. Dua ma QR vao khung de he thong tu dong doc.";
     els.cameraStatus.className = "camera-status success";
+    const scanCanvas = document.createElement("canvas");
+    scannerFrameId = requestAnimationFrame(() => decodeCameraFrame(els.cameraPreview, scanCanvas));
   } catch (error) {
     els.cameraStatus.textContent = "Khong mo duoc camera. Co the ban chua cap quyen, trinh duyet chan quyen, hoac trang chua chay qua HTTPS.";
     els.cameraStatus.className = "camera-status error";
@@ -790,7 +853,7 @@ function init() {
   setDefaultExpireTime();
   const firstActive = state.passes.find((pass) => currentPassStatus(pass) === "active") || state.passes[0];
   if (firstActive) updateOwnerPreview(firstActive);
-  else drawDemoQr("SMART-RESIDENCE-OS", els.ownerQrCanvas);
+  else drawQr("SMART-RESIDENCE-OS", els.ownerQrCanvas);
   renderScanDetail(null);
   renderAll();
   showSection(state.session ? defaultSectionByRole[state.session.role] : "loginPage");
