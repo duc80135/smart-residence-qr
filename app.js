@@ -1,6 +1,10 @@
 const STORAGE_KEY = "smartResidenceOwnerGuardDemoV3";
 const SHARED_STATE_KEY = "smartResidenceQrSharedStateV3";
 
+if (typeof window.FIREBASE_CONFIG === "undefined") {
+  window.FIREBASE_CONFIG = null;
+}
+
 const roleDescriptions = {
   resident: "Chu nha tao ma QR cho shipper, doi ky thuat hoac khach.",
   security: "Bao ve quet QR, xem thong tin va xac nhan dung doi tuong.",
