@@ -392,6 +392,16 @@ button {
   margin-bottom: 16px;
 }
 
+.panel-stack {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.panel-stack .panel {
+  margin-bottom: 0;
+}
+
 .security-grid {
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
 }

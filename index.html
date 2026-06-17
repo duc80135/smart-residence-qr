@@ -153,16 +153,6 @@
             </div>
           </div>
 
-          <article class="panel role-content priority-panel" data-roles="resident manager">
-            <div class="panel-heading">
-              <h3>Yeu cau xac nhan tu bao ve</h3>
-              <span id="ownerConfirmCount" class="soft-badge">0 yeu cau</span>
-            </div>
-            <p class="helper-text">Khi bao ve quet QR hop le, yeu cau se hien ngay tai day. Chu nha bam dong y thi bao ve moi duoc cho vao.</p>
-            <p class="sync-note" id="ownerSyncNote">Neu da bat dong bo online, yeu cau tu dien thoai bao ve se hien tai day tren dien thoai chu nha.</p>
-            <div id="ownerConfirmList" class="card-list"></div>
-          </article>
-
           <div class="split-grid">
             <article class="panel role-content" data-roles="resident manager">
               <div class="panel-heading">
@@ -260,13 +250,25 @@
               </form>
             </article>
 
-            <article class="panel">
-              <div class="panel-heading">
-                <h3>QR chu nha da tao</h3>
-                <span id="createdPassCount" class="soft-badge">0 QR</span>
-              </div>
-              <div id="createdPassList" class="card-list compact"></div>
-            </article>
+            <div class="panel-stack">
+              <article class="panel role-content priority-panel" data-roles="resident manager">
+                <div class="panel-heading">
+                  <h3>Yeu cau xac nhan tu bao ve</h3>
+                  <span id="ownerConfirmCount" class="soft-badge">0 yeu cau</span>
+                </div>
+                <p class="helper-text">Khi bao ve quet QR hop le, yeu cau se hien ngay tai day. Chu nha bam dong y thi bao ve moi duoc cho vao.</p>
+                <p class="sync-note" id="ownerSyncNote">Neu da bat dong bo online, yeu cau tu dien thoai bao ve se hien tai day tren dien thoai chu nha.</p>
+                <div id="ownerConfirmList" class="card-list"></div>
+              </article>
+
+              <article class="panel">
+                <div class="panel-heading">
+                  <h3>QR chu nha da tao</h3>
+                  <span id="createdPassCount" class="soft-badge">0 QR</span>
+                </div>
+                <div id="createdPassList" class="card-list compact"></div>
+              </article>
+            </div>
           </div>
 
         </section>
