@@ -655,11 +655,7 @@ function renderOwnerConfirmations() {
     <div class="item-card empty-confirm-card">
       <div>
         <h3>Chua co yeu cau tu bao ve</h3>
-        <p>Khi bao ve quet QR hop le, thong tin nguoi den se hien o day de chu nha chon dung doi tuong hoac tu choi.</p>
-      </div>
-      <div class="item-actions">
-        <button class="mini-button approve-action" type="button" disabled>Dung doi tuong</button>
-        <button class="mini-button" type="button" disabled>Tu choi</button>
+        <p>Sau khi bao ve quet dung QR, thong tin nguoi den se hien o day kem nut Dung doi tuong va Tu choi de chu nha chon.</p>
       </div>
     </div>
   `;
