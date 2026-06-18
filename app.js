@@ -692,7 +692,7 @@ function renderScanDetail(pass, mode = "neutral") {
 
   const canConfirm = status === "ownerApproved";
   els.confirmEntryButton.disabled = !canConfirm;
-  els.rejectEntryButton.disabled = status === "expired" || status === "checkedIn";
+  els.rejectEntryButton.disabled = true;
 }
 
 function renderAccessLogs() {
@@ -1027,10 +1027,6 @@ function bindEvents() {
 
   els.confirmEntryButton.addEventListener("click", () => {
     logGateDecision("Hop le", "Chu nha da dong y. Bao ve ghi nhan cho vao.", "checkedIn");
-  });
-
-  els.rejectEntryButton.addEventListener("click", () => {
-    logGateDecision("Tu choi", "Bao ve tu choi vi nguoi den khong khop thong tin QR.", "rejected");
   });
 
   els.ticketForm.addEventListener("submit", (event) => {
