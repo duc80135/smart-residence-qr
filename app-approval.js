@@ -19,6 +19,27 @@ const demoAccounts = {
     label: "Chu nha A-1205",
     apartment: "A-1205"
   },
+  chu_nha_b0810: {
+    password: "123456",
+    role: "resident",
+    name: "Nguyen Thu Ha",
+    label: "Chu nha B-0810",
+    apartment: "B-0810"
+  },
+  chu_nha_c1512: {
+    password: "123456",
+    role: "resident",
+    name: "Le Quoc Anh",
+    label: "Chu nha C-1512",
+    apartment: "C-1512"
+  },
+  chu_nha_a0702: {
+    password: "123456",
+    role: "resident",
+    name: "Pham Gia Han",
+    label: "Chu nha A-0702",
+    apartment: "A-0702"
+  },
   bao_ve_01: {
     password: "123456",
     role: "security",
@@ -88,6 +109,10 @@ const els = {
   createdPassCount: document.getElementById("createdPassCount"),
   ownerConfirmList: document.getElementById("ownerConfirmList"),
   ownerConfirmCount: document.getElementById("ownerConfirmCount"),
+  ownerNotificationPanel: document.getElementById("ownerNotificationPanel"),
+  ownerNotificationTitle: document.getElementById("ownerNotificationTitle"),
+  ownerNotificationText: document.getElementById("ownerNotificationText"),
+  viewOwnerRequestsButton: document.getElementById("viewOwnerRequestsButton"),
   scanSelect: document.getElementById("scanSelect"),
   manualToken: document.getElementById("manualToken"),
   scanButton: document.getElementById("scanButton"),
@@ -123,6 +148,13 @@ let cameraStream = null;
 let scannerFrameId = null;
 let realtimeRef = null;
 let applyingRemoteState = false;
+let localChannel = null;
+
+try {
+  localChannel = new BroadcastChannel("smartResidenceQrLocalSync");
+} catch {
+  localChannel = null;
+}
 
 function createSeedState() {
   const now = new Date();
@@ -243,6 +275,10 @@ function getSharedStateSnapshot() {
   return sharedState;
 }
 
+function getPendingOwnerRequests() {
+  return state.passes.filter((pass) => currentPassStatus(pass) === "waitingOwner" && canCurrentUserSeePass(pass));
+}
+
 function setSyncStatus(message, mode = "offline") {
   if (els.syncStatus) {
     els.syncStatus.textContent = message;
@@ -258,6 +294,9 @@ function setSyncStatus(message, mode = "offline") {
 function saveState(options = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   const shouldSyncRemote = options.remote !== false;
+  if (shouldSyncRemote && localChannel && !applyingRemoteState) {
+    localChannel.postMessage(getSharedStateSnapshot());
+  }
   if (shouldSyncRemote && realtimeRef && !applyingRemoteState) {
     realtimeRef.set(getSharedStateSnapshot()).catch(() => {
       setSyncStatus("Dong bo: loi ghi Firebase, dang giu du lieu cuc bo.", "offline");
@@ -265,7 +304,7 @@ function saveState(options = {}) {
   }
 }
 
-function applyRemoteSharedState(remoteState) {
+function applySharedState(remoteState) {
   if (!remoteState || remoteState.version !== 3) return;
   const session = state.session || null;
   const selectedPassId = scannedPassId;
@@ -288,6 +327,10 @@ function applyRemoteSharedState(remoteState) {
     }
   }
   applyingRemoteState = false;
+}
+
+function applyRemoteSharedState(remoteState) {
+  applySharedState(remoteState);
 }
 
 function initRealtimeSync() {
@@ -562,7 +605,7 @@ function renderDashboard() {
   els.currentTime.textContent = formatDateTime(new Date().toISOString());
   els.activePasses.textContent = state.passes.filter((pass) => currentPassStatus(pass) === "active").length;
   els.todayVisits.textContent = state.accessLogs.filter((log) => isToday(log.time) && log.result === "Hop le").length;
-  els.expiredPasses.textContent = state.passes.filter((pass) => currentPassStatus(pass) === "expired").length;
+  els.expiredPasses.textContent = state.passes.filter((pass) => currentPassStatus(pass) === "waitingOwner").length;
   els.processingTickets.textContent = state.tickets.filter((ticket) => ticket.status !== "done").length;
 
   const buckets = ["06-09", "09-12", "12-15", "15-18", "18-21"];
@@ -631,7 +674,7 @@ function renderPasses() {
 }
 
 function renderOwnerConfirmations() {
-  const waiting = state.passes.filter((pass) => currentPassStatus(pass) === "waitingOwner" && canCurrentUserSeePass(pass));
+  const waiting = getPendingOwnerRequests();
   els.ownerConfirmCount.textContent = `${waiting.length} yeu cau`;
   els.ownerConfirmList.innerHTML = waiting.length ? waiting.map((pass) => `
     <article class="item-card">
@@ -643,6 +686,7 @@ function renderOwnerConfirmations() {
           <span>${pass.apartment}</span>
           <span>${pass.phone || "Khong co SDT"}</span>
           <span>${pass.code || "Khong co ma phu"}</span>
+          <span>Bao ve: ${pass.guardName || "Dang truc cong"}</span>
           <span>Quet luc: ${pass.guardScannedAt ? formatDateTime(pass.guardScannedAt) : "Vua quet"}</span>
         </div>
       </div>
@@ -659,6 +703,20 @@ function renderOwnerConfirmations() {
       </div>
     </div>
   `;
+}
+
+function renderOwnerNotification() {
+  if (!els.ownerNotificationPanel) return;
+  const pending = getPendingOwnerRequests();
+  const canSeePanel = ["resident", "manager"].includes(getCurrentRole());
+  els.ownerNotificationPanel.classList.toggle("hidden", !canSeePanel || pending.length === 0);
+  if (!canSeePanel || pending.length === 0) return;
+
+  const newest = pending.slice().sort((a, b) => {
+    return new Date(b.guardScannedAt || b.createdAt).getTime() - new Date(a.guardScannedAt || a.createdAt).getTime();
+  })[0];
+  els.ownerNotificationTitle.textContent = `${pending.length} yeu cau dang cho chu nha xac nhan`;
+  els.ownerNotificationText.textContent = `${newest.visitorName} - ${newest.apartment}. Bao ve vua quet QR va dang cho chu nha chon Dung doi tuong hoac Tu choi.`;
 }
 
 function renderScanDetail(pass, mode = "neutral") {
@@ -804,6 +862,7 @@ function scanToken(rawValue) {
   if (status === "active") {
     pass.status = "waitingOwner";
     pass.guardScannedAt = new Date().toISOString();
+    pass.guardName = state.session?.label || state.session?.name || "Bao ve cong";
     saveState();
     renderAll();
     renderScanDetail(pass, "success");
@@ -963,6 +1022,9 @@ function bindEvents() {
       const kind = button.dataset.demoLogin;
       const presets = {
         owner: ["chu_nha_a1205", "123456"],
+        ownerB: ["chu_nha_b0810", "123456"],
+        ownerC: ["chu_nha_c1512", "123456"],
+        ownerA7: ["chu_nha_a0702", "123456"],
         guard: ["bao_ve_01", "123456"],
         manager: ["quan_ly", "123456"]
       };
@@ -1014,6 +1076,11 @@ function bindEvents() {
     setTimeout(() => {
       els.copyTokenButton.textContent = "Sao chep token de gui";
     }, 1800);
+  });
+
+  els.viewOwnerRequestsButton?.addEventListener("click", () => {
+    showSection("residentPortal");
+    els.ownerConfirmList?.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
   els.scanButton.addEventListener("click", () => {
@@ -1069,6 +1136,28 @@ function bindEvents() {
     saveState();
     init();
   });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEY || !event.newValue) return;
+    try {
+      const parsed = JSON.parse(event.newValue);
+      applySharedState(getSharedStateSnapshotFromState(parsed));
+    } catch {
+      // Ignore malformed data from another tab.
+    }
+  });
+
+  if (localChannel) {
+    localChannel.addEventListener("message", (event) => {
+      applySharedState(event.data);
+    });
+  }
+}
+
+function getSharedStateSnapshotFromState(nextState) {
+  if (!nextState) return null;
+  const { session, ...sharedState } = nextState;
+  return sharedState;
 }
 
 function renderAll() {
@@ -1082,6 +1171,7 @@ function renderAll() {
   renderTicketCharts();
   renderReports();
   applySession();
+  renderOwnerNotification();
 }
 
 function init() {

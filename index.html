@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Smart Residence OS - QR Chung Cu</title>
-    <link rel="stylesheet" href="styles.css?v=20260617-approval-2" />
+    <link rel="stylesheet" href="styles.css?v=20260619-residence" />
   </head>
   <body>
     <div class="app-shell">
@@ -30,7 +30,6 @@
           <button class="nav-button" data-section="residentPortal" data-roles="resident manager">Chu nha tao QR</button>
           <button class="nav-button" data-section="securityGate" data-roles="security manager">Bao ve quet QR</button>
           <button class="nav-button" data-section="management" data-roles="manager">Quan ly</button>
-          <button class="nav-button" data-section="roadmap" data-roles="resident security manager">Roadmap</button>
         </nav>
       </aside>
 
@@ -76,6 +75,21 @@
                   <span>user: chu_nha_a1205</span>
                   <span>pass: 123456</span>
                 </button>
+                <button class="credential-card" type="button" data-demo-login="ownerB">
+                  <b>Chu nha B-0810</b>
+                  <span>user: chu_nha_b0810</span>
+                  <span>pass: 123456</span>
+                </button>
+                <button class="credential-card" type="button" data-demo-login="ownerC">
+                  <b>Chu nha C-1512</b>
+                  <span>user: chu_nha_c1512</span>
+                  <span>pass: 123456</span>
+                </button>
+                <button class="credential-card" type="button" data-demo-login="ownerA7">
+                  <b>Chu nha A-0702</b>
+                  <span>user: chu_nha_a0702</span>
+                  <span>pass: 123456</span>
+                </button>
                 <button class="credential-card" type="button" data-demo-login="guard">
                   <b>Bao ve ca sang</b>
                   <span>user: bao_ve_01</span>
@@ -112,9 +126,9 @@
               <small>Bao ve da xac nhan</small>
             </article>
             <article class="metric-card alert">
-              <span>QR het han</span>
+              <span>Yeu cau cho chu nha</span>
               <strong id="expiredPasses">0</strong>
-              <small>Can tao ma moi</small>
+              <small>Bao ve da gui len</small>
             </article>
             <article class="metric-card">
               <span>Ticket dang xu ly</span>
@@ -139,7 +153,7 @@
                 <div><b>1</b><span>Chu nha nhap thong tin shipper, doi ky thuat hoac khach.</span></div>
                 <div><b>2</b><span>He thong tao QR da duoc chu nha cho phep va hien tren dien thoai.</span></div>
                 <div><b>3</b><span>Chu nha gui anh QR hoac token cho nguoi den.</span></div>
-                <div><b>4</b><span>Bao ve quet QR, doi chieu thong tin, roi bam xac nhan dung doi tuong.</span></div>
+                <div><b>4</b><span>Bao ve quet QR de gui yeu cau, chu nha bam dung doi tuong hoac tu choi.</span></div>
               </div>
             </article>
           </div>
@@ -152,6 +166,15 @@
               <h2>Chu nha tao QR cho shipper, doi ky thuat hoac khach</h2>
             </div>
           </div>
+
+          <article id="ownerNotificationPanel" class="owner-alert hidden" data-roles="resident manager">
+            <div>
+              <span class="notify-dot"></span>
+              <strong id="ownerNotificationTitle">Co yeu cau xac nhan moi</strong>
+              <p id="ownerNotificationText">Bao ve vua quet QR va dang cho chu nha xac nhan.</p>
+            </div>
+            <button id="viewOwnerRequestsButton" class="mini-button approve-action" type="button">Xem yeu cau</button>
+          </article>
 
           <div class="split-grid">
             <article class="panel role-content" data-roles="resident manager">
@@ -287,7 +310,7 @@
                 <h3>Quet ma tai cong</h3>
                 <span class="soft-badge">Bao ve</span>
               </div>
-              <p class="helper-text">Bao ve khong tao QR. Bao ve chi quet ma do nguoi den dua ra, xem thong tin co dung voi ma chu nha tao hay khong, roi moi bam xac nhan.</p>
+              <p class="helper-text">Bao ve khong tao QR va khong duyet thay chu nha. Bao ve chi quet ma cua nguoi den; neu ma hop le, he thong gui yeu cau xac nhan ve tai khoan chu nha dung can ho.</p>
               <div class="phone-mock guard-phone">
                 <div class="phone-speaker"></div>
                 <div class="phone-screen">
@@ -330,7 +353,7 @@
                 Quet QR de hien thong tin nguoi den, can ho, loai doi tuong, han su dung va ghi chu cua chu nha.
               </div>
               <div class="confirm-actions">
-                <button id="confirmEntryButton" class="primary-button" type="button" disabled>Ghi nhan cho vao sau khi chu nha dong y</button>
+                <button id="confirmEntryButton" class="primary-button" type="button" disabled>Cho vao sau khi chu nha dong y</button>
                 <button id="rejectEntryButton" class="danger-button hidden" type="button" disabled>Tu choi / khong khop thong tin</button>
               </div>
             </article>
@@ -412,37 +435,6 @@
             <div id="weeklyChart" class="bar-chart weekly"></div>
           </article>
         </section>
-
-        <section id="roadmap" class="page-section">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Dinh huong phat trien</p>
-              <h2>Mo rong sau MVP</h2>
-            </div>
-          </div>
-          <div class="roadmap-grid">
-            <article class="roadmap-item done">
-              <b>MVP</b>
-              <h3>Chu nha tao QR</h3>
-              <p>Nhap thong tin nguoi den, tao QR va gui cho shipper/khach/doi ky thuat.</p>
-            </article>
-            <article class="roadmap-item done">
-              <b>MVP</b>
-              <h3>Bao ve quet va doi chieu</h3>
-              <p>Quet QR, xem thong tin, xac nhan dung doi tuong hoac tu choi.</p>
-            </article>
-            <article class="roadmap-item">
-              <b>Giai doan 2</b>
-              <h3>Quet camera that</h3>
-              <p>Tich hop camera dien thoai bang thu vien QR scanner hoac BarcodeDetector.</p>
-            </article>
-            <article class="roadmap-item">
-              <b>Giai doan 3</b>
-              <h3>Tich hop thiet bi</h3>
-              <p>Ket noi barrier, camera, backend, thong bao va app mobile.</p>
-            </article>
-          </div>
-        </section>
       </main>
     </div>
 
@@ -451,6 +443,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
     <script src="firebase-config.js?v=20260617-approval-2"></script>
-    <script src="app-approval.js"></script>
+    <script src="app-approval.js?v=20260619-residence"></script>
   </body>
 </html>
